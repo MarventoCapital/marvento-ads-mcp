@@ -1,0 +1,68 @@
+# Marvento Ads MCP: production stack for a single small VPS.
+#
+#   mcp    the Google Ads MCP server (streamable HTTP on :8080, internal only)
+#   caddy  public HTTPS on :443 with automatic Let's Encrypt certificates
+#
+# Usage on the droplet (cloud-init does this on first boot):
+#   cd /opt/ads-mcp/src/deploy && docker compose up -d --build
+# Redeploy after a git pull:
+#   ./update.sh
+
+services:
+  mcp:
+    build:
+      context: ..
+      dockerfile: Dockerfile
+    image: marvento/ads-mcp:local
+    container_name: ads-mcp
+    restart: unless-stopped
+    env_file:
+      - ${ADS_MCP_ENV_FILE:-.env}
+    environment:
+      PORT: "8080"
+      FASTMCP_HOST: "0.0.0.0"
+      GOOGLE_ADS_MCP_STORAGE_TYPE: filetree
+      GOOGLE_ADS_MCP_STORAGE_PATH: /data/oauth
+    volumes:
+      - oauth_store:/data
+    expose:
+      - "8080"
+    healthcheck:
+      test: ["CMD-SHELL", "python -c \"import urllib.request,sys; r=urllib.request.urlopen('http://127.0.0.1:8080/.well-known/oauth-authorization-server', timeout=5); sys.exit(0 if r.status==200 else 1)\""]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 20s
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "5"
+
+  caddy:
+    image: caddy:2-alpine
+    container_name: ads-mcp-caddy
+    restart: unless-stopped
+    depends_on:
+      - mcp
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"
+    environment:
+      ADS_MCP_HOSTNAME: ${ADS_MCP_HOSTNAME:-ads-mcp.mlabs.ae}
+      ADS_MCP_ACME_EMAIL: ${ADS_MCP_ACME_EMAIL:-admin@mlabs.ae}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "5"
+
+volumes:
+  oauth_store:
+  caddy_data:
+  caddy_config:

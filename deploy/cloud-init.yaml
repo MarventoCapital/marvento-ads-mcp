@@ -1,0 +1,73 @@
+#cloud-config
+# Marvento Ads MCP droplet bootstrap.
+#
+# Placeholders written as double-brace tokens are filled by deploy/create_droplet.py.
+# The result is passed as DigitalOcean "user data". Everything below runs once
+# on first boot; the box is fully configured with no SSH session needed.
+
+hostname: ads-mcp
+timezone: Asia/Dubai
+package_update: true
+package_upgrade: true
+packages:
+  - git
+  - ufw
+  - fail2ban
+  - unattended-upgrades
+  - ca-certificates
+  - curl
+
+write_files:
+  - path: /opt/ads-mcp/.env
+    permissions: "0600"
+    owner: root:root
+    content: |
+      GOOGLE_ADS_MCP_OAUTH_CLIENT_ID={{oauth_client_id}}
+      GOOGLE_ADS_MCP_OAUTH_CLIENT_SECRET={{oauth_client_secret}}
+      GOOGLE_ADS_MCP_BASE_URL=https://{{hostname}}
+      GOOGLE_ADS_MCP_JWT_SIGNING_KEY={{jwt_signing_key}}
+      GOOGLE_PROJECT_ID={{google_project_id}}
+      GOOGLE_ADS_DEVELOPER_TOKEN={{developer_token}}
+      GOOGLE_ADS_LOGIN_CUSTOMER_ID={{login_customer_id}}
+      ADS_MCP_MAX_DAILY_BUDGET={{max_daily_budget}}
+      ADS_MCP_HOSTNAME={{hostname}}
+      ADS_MCP_ACME_EMAIL={{acme_email}}
+  - path: /etc/apt/apt.conf.d/51-ads-mcp-unattended
+    content: |
+      Unattended-Upgrade::Automatic-Reboot "true";
+      Unattended-Upgrade::Automatic-Reboot-Time "04:30";
+  - path: /etc/profile.d/ads-mcp.sh
+    content: |
+      export ADS_MCP_ENV_FILE=/opt/ads-mcp/.env
+      alias ads-logs='docker logs -f --tail 200 ads-mcp'
+      alias ads-update='sudo /opt/ads-mcp/src/deploy/update.sh'
+
+swap:
+  filename: /swapfile
+  size: 2G
+  maxsize: 2G
+
+runcmd:
+  # Firewall first.
+  - ufw default deny incoming
+  - ufw default allow outgoing
+  - ufw allow OpenSSH
+  - ufw allow 80/tcp
+  - ufw allow 443/tcp
+  - ufw allow 443/udp
+  - ufw --force enable
+  - systemctl enable --now fail2ban
+  # Docker Engine + compose plugin from Docker's repo.
+  - curl -fsSL https://get.docker.com -o /tmp/get-docker.sh
+  - sh /tmp/get-docker.sh
+  - systemctl enable --now docker
+  # Source checkout and first deployment.
+  - git clone --branch {{git_branch}} {{git_repo}} /opt/ads-mcp/src
+  - chmod +x /opt/ads-mcp/src/deploy/update.sh
+  # compose reads deploy/.env for both env_file and ${VAR} interpolation.
+  - ln -sf /opt/ads-mcp/.env /opt/ads-mcp/src/deploy/.env
+  - cd /opt/ads-mcp/src/deploy && docker compose up -d --build
+  # Marker file the provisioning script polls for.
+  - echo "provisioned $(date -u +%FT%TZ) $(cd /opt/ads-mcp/src && git rev-parse --short HEAD)" > /opt/ads-mcp/PROVISIONED
+
+final_message: "ads-mcp droplet ready after $UPTIME seconds"

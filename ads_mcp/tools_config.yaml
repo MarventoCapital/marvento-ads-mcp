@@ -1,0 +1,19 @@
+# tools_config.yaml
+#
+# Tools configuration for the Google Ads MCP server.
+# Modify this file to enable/disable tool namespaces or set custom prefixes.
+#
+# Read-only (from Google's upstream server):
+#   customers, search, metadata
+# Write tools (Marvento Labs extension):
+#   campaigns, ad_groups, ads, assets
+# Set a write namespace to false to run the server read-only.
+
+namespaces:
+  customers: true
+  search: true
+  metadata: true
+  campaigns: true
+  ad_groups: true
+  ads: true
+  assets: true

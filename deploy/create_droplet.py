@@ -140,6 +140,14 @@ def destroy_keep_ip(token: str, droplet: dict) -> None:
         time.sleep(5)
 
 
+def resolves_to(hostname: str, ip: str) -> bool:
+    import socket
+    try:
+        return ip in {a[4][0] for a in socket.getaddrinfo(hostname, 443, socket.AF_INET)}
+    except OSError:
+        return False
+
+
 def render_user_data(values: dict) -> str:
     template = (Path(__file__).parent / "cloud-init.yaml").read_text()
     for key, val in values.items():
@@ -245,8 +253,14 @@ def create(token: str, recreate: bool = False) -> None:
     cf_token = env("CF_TOKEN")
     if cf_token:
         cloudflare_upsert_a(cf_token, hostname, reserved_ip)
+    elif resolves_to(hostname, reserved_ip):
+        print(f"\nDNS: {hostname} already resolves to {reserved_ip}.")
     else:
-        print(f"\nDNS: create an A record  {hostname} -> {reserved_ip}  (DNS only, not proxied).")
+        print(
+            f"\nDNS: create an A record  {hostname} -> {reserved_ip}  (DNS only, not proxied).\n"
+            "Create it before the droplet finishes booting: Caddy requests the certificate\n"
+            "on first start, and early failures trip Let's Encrypt's failed-validation limit."
+        )
 
     print(
         "\nCloud-init now installs Docker, builds the image and starts Caddy.\n"

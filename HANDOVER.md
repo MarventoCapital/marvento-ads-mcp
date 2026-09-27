@@ -1,14 +1,14 @@
 # Handover: Marvento Ads MCP
 
 Rules: see AGENTS.md.
-Last updated: 2026-09-27 14:35 Asia/Dubai by Luis via Claude.
-Current version: unreleased (no deployment yet). Baseline upstream d7f5e8f.
+Last updated: 2026-09-27 15:40 Asia/Dubai by Luis via Claude.
+Current version: unreleased; test deployment live on the droplet (placeholder OAuth). Baseline upstream d7f5e8f.
 
 ## Current state
-Code complete, on GitHub (MarventoCapital/marvento-ads-mcp, public, main). Clean install from the GitHub clone passes 100 tests and mounts 23 tools; simulated Docker build passes. Server verified locally in HTTP + OAuth mode: `/.well-known/oauth-authorization-server` served, `/mcp` returns 401 with `WWW-Authenticate` until a client logs in. Nothing deployed yet; Google Cloud project not confirmed yet.
+Code on GitHub (MarventoCapital/marvento-ads-mcp, public, main); 100 tests pass on a clean install. Server live at https://ads-mcp.mlabs.ae on droplet 604080130 since 2026-09-27 11:32 UTC with PLACEHOLDER Google OAuth values. Verified end to end up to the Google sign-in redirect (certificate, 401 challenge, client registration, consent, redirect to Google with `https://ads-mcp.mlabs.ae/auth/callback`). Google sign-in and tool calls wait on the real OAuth client.
 
 ## Work in progress
-- Deployment (Claude): test droplet `ads-mcp` (id 604071109, fra1, s-1vcpu-1gb) created 2026-09-27 10:30 UTC on reserved IP 159.89.212.185 with PLACEHOLDER OAuth values, to validate cloud-init, the Docker build, Caddy/TLS and DNS before the Google side is ready. Waiting on: Cloudflare A record `ads-mcp` -> 159.89.212.185 (DNS only), then the real OAuth client ID/secret for `--recreate`.
+- Deployment (Claude): droplet `ads-mcp` id 604080130 on reserved IP 159.89.212.185 runs placeholder OAuth values. Next action is `--recreate` with the real OAuth client ID/secret. Cloudflare A record `ads-mcp.mlabs.ae -> 159.89.212.185` (DNS only, TTL Auto) exists since ~10:43 UTC; added by Claude through Luis's Cloudflare dashboard session.
 - Google side (Luis): Cloud project, Ads API enabled, OAuth consent (published to production), OAuth web client with redirect `https://ads-mcp.mlabs.ae/auth/callback`, brand verification, Basic access application, test manager account.
 
 ## Blockers

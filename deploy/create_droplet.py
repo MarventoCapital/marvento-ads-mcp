@@ -28,6 +28,10 @@ Usage:
   python3 deploy/create_droplet.py            # create everything
   python3 deploy/create_droplet.py --dns-only # only (re)point DNS at the reserved IP
   python3 deploy/create_droplet.py --status   # show droplet + reserved IP
+  python3 deploy/create_droplet.py --recreate # destroy + recreate (e.g. new secrets);
+                                              # keeps the reserved IP, so DNS stays valid.
+                                              # Pass the same GOOGLE_ADS_MCP_JWT_SIGNING_KEY
+                                              # to keep existing connector logins.
 """
 
 from __future__ import annotations
@@ -52,7 +56,16 @@ def env(name: str, default: str | None = None, required: bool = False) -> str:
     return value or ""
 
 
-def http(method: str, url: str, token: str, body: dict | None = None) -> dict:
+class HttpError(Exception):
+    def __init__(self, code: int, detail: str):
+        super().__init__(f"HTTP {code}: {detail}")
+        self.code = code
+        self.detail = detail
+
+
+def http(
+    method: str, url: str, token: str, body: dict | None = None, fatal: bool = True
+) -> dict:
     data = json.dumps(body).encode() if body is not None else None
     req = urllib.request.Request(url, data=data, method=method)
     req.add_header("Authorization", f"Bearer {token}")
@@ -63,7 +76,9 @@ def http(method: str, url: str, token: str, body: dict | None = None) -> dict:
             return json.loads(raw) if raw else {}
     except urllib.error.HTTPError as e:
         detail = e.read().decode(errors="replace")
-        sys.exit(f"{method} {url} -> HTTP {e.code}: {detail}")
+        if fatal:
+            sys.exit(f"{method} {url} -> HTTP {e.code}: {detail}")
+        raise HttpError(e.code, detail)
 
 
 # --------------------------------------------------------------------------- #
@@ -101,6 +116,30 @@ def do_ssh_key_ids(token: str) -> list[int]:
     return [k["id"] for k in page.get("ssh_keys", [])]
 
 
+def destroy_keep_ip(token: str, droplet: dict) -> None:
+    """Destroys a droplet and waits until it is gone. Its reserved IP becomes
+    unassigned (it is not released), so DNS keeps pointing at the same address."""
+    did = droplet["id"]
+    print(f"destroying droplet {droplet['name']} (id {did}); the reserved IP is kept")
+    http("DELETE", f"{DO_API}/droplets/{did}", token)
+    for _ in range(60):
+        try:
+            http("GET", f"{DO_API}/droplets/{did}", token, fatal=False)
+        except HttpError as e:
+            if e.code == 404:
+                break
+            raise
+        time.sleep(5)
+    else:
+        sys.exit("droplet was not destroyed within 5 minutes")
+    # The reserved IP is released from the droplet asynchronously.
+    for _ in range(24):
+        page = http("GET", f"{DO_API}/reserved_ips?per_page=200", token)
+        if not any((ip.get("droplet") or {}).get("id") == did for ip in page.get("reserved_ips", [])):
+            return
+        time.sleep(5)
+
+
 def render_user_data(values: dict) -> str:
     template = (Path(__file__).parent / "cloud-init.yaml").read_text()
     for key, val in values.items():
@@ -111,13 +150,19 @@ def render_user_data(values: dict) -> str:
     return template
 
 
-def create(token: str) -> None:
+def create(token: str, recreate: bool = False) -> None:
     name = env("DROPLET_NAME", "ads-mcp")
     region = env("DO_REGION", "fra1")
     hostname = env("ADS_MCP_HOSTNAME", "ads-mcp.mlabs.ae")
 
-    if do_find_droplet(token, name):
-        sys.exit(f"droplet '{name}' already exists; destroy it first or use --status")
+    existing = do_find_droplet(token, name)
+    if existing and not recreate:
+        sys.exit(
+            f"droplet '{name}' already exists; use --recreate to replace it "
+            "(the reserved IP and DNS stay), or --status"
+        )
+    if existing:
+        destroy_keep_ip(token, existing)
 
     jwt_key = env("GOOGLE_ADS_MCP_JWT_SIGNING_KEY")
     generated = False
@@ -172,12 +217,22 @@ def create(token: str) -> None:
     else:
         sys.exit("droplet did not become active in 5 minutes")
 
-    http(
-        "POST",
-        f"{DO_API}/reserved_ips/{reserved_ip}/actions",
-        token,
-        {"type": "assign", "droplet_id": droplet_id},
-    )
+    # DO rejects the assignment (422) while the droplet still has its create
+    # event pending, so retry for a couple of minutes.
+    for attempt in range(24):
+        try:
+            http(
+                "POST",
+                f"{DO_API}/reserved_ips/{reserved_ip}/actions",
+                token,
+                {"type": "assign", "droplet_id": droplet_id},
+                fatal=False,
+            )
+            break
+        except HttpError as e:
+            if e.code not in (409, 422) or attempt == 23:
+                sys.exit(f"assigning reserved IP failed: {e}")
+            time.sleep(5)
     print(f"assigned reserved IP {reserved_ip} to droplet {droplet_id}")
 
     if generated:
@@ -250,7 +305,7 @@ def main() -> None:
         ip = do_reserved_ip_of(token, d["id"])
         cloudflare_upsert_a(env("CF_TOKEN", required=True), env("ADS_MCP_HOSTNAME", "ads-mcp.mlabs.ae"), ip)
     else:
-        create(token)
+        create(token, recreate="--recreate" in sys.argv)
 
 
 if __name__ == "__main__":

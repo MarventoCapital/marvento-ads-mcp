@@ -21,6 +21,7 @@ Fork baseline: upstream googleads/google-ads-mcp commit d7f5e8f (2026-09-25, pac
 
 ### Fixed
 - `pyproject.toml`: setuptools package discovery restricted to `ads_mcp*`; `.dockerignore` now excludes all of `deploy/`. Why: with `deploy/create_droplet.py` present, setuptools auto-discovery found two top-level packages and refused to build, so the Docker image (and any `pip install .`) would have failed on the droplet. Caught by a clean install from the GitHub clone. Tested: fresh venv install, 100 tests pass, 23 tools mount from the installed package, simulated Docker build context installs and the Dockerfile's FastMCP patch assertion holds.
+- `deploy/create_droplet.py`: retries the reserved-IP assignment while DigitalOcean still reports the droplet's create event as pending (422), and adds `--recreate` (destroy + create on the same reserved IP, so DNS stays valid). Why: secrets on the droplet can only be changed by rebuilding it, since this workspace has no SSH path; the placeholder-credential test deployment relies on it. `deploy/cloud-init.yaml`: swap size given in bytes, the form cloud-init documents.
 
 ### Repository
 - Published to github.com/MarventoCapital/marvento-ads-mcp (public) on 2026-09-27 through the GitHub connector. History there starts fresh (8 commits); upstream history stays in googleads/google-ads-mcp. Verified: clone is byte-identical to the working tree (60 files).

@@ -44,8 +44,8 @@ write_files:
 
 swap:
   filename: /swapfile
-  size: 2G
-  maxsize: 2G
+  size: 2147483648
+  maxsize: 2147483648
 
 runcmd:
   # Firewall first.

@@ -1,11 +1,11 @@
 # Handover: Marvento Ads MCP
 
 Rules: see AGENTS.md.
-Last updated: 2026-09-27 00:20 Asia/Dubai by Luis via Claude.
+Last updated: 2026-09-27 04:10 Asia/Dubai by Luis via Claude.
 Current version: unreleased (no deployment yet). Baseline upstream d7f5e8f.
 
 ## Current state
-Code complete and unit-tested locally (100 tests pass). Server verified locally in HTTP + OAuth mode: `/.well-known/oauth-authorization-server` served, `/mcp` returns 401 with `WWW-Authenticate` until a client logs in. Nothing deployed yet; no Google Cloud project yet.
+Code complete, on GitHub (MarventoCapital/marvento-ads-mcp, public, main). Clean install from the GitHub clone passes 100 tests and mounts 23 tools; simulated Docker build passes. Server verified locally in HTTP + OAuth mode: `/.well-known/oauth-authorization-server` served, `/mcp` returns 401 with `WWW-Authenticate` until a client logs in. Nothing deployed yet; Google Cloud project not confirmed yet.
 
 ## Work in progress
 - Deployment (Claude, with Luis providing credentials): `deploy/create_droplet.py` ready; waiting on a DigitalOcean API token and the Google OAuth client id/secret.
@@ -16,7 +16,7 @@ Code complete and unit-tested locally (100 tests pass). Server verified locally 
 - Droplet creation: needs the DO token.
 
 ## Next steps (priority order)
-1. Repo: `MarventoCapital/marvento-ads-mcp` (public; upstream history kept via git push). Set `GIT_REPO` when running `create_droplet.py` if it moves.
+1. Done 2026-09-27: repo published at `MarventoCapital/marvento-ads-mcp` (public). `create_droplet.py` defaults to it; set `GIT_REPO` if it moves.
 2. Run `deploy/create_droplet.py` once the DO token and OAuth client exist; create the Cloudflare A record (DNS only) if no `CF_TOKEN` is provided.
 3. Add the custom connector in claude.ai (`https://ads-mcp.mlabs.ae/mcp`), sign in with Google, confirm 23 tools are listed.
 4. Smoke test on the Google Ads **test** account: `customers_list_accessible_customers`, then budget -> campaign -> targeting -> ad group -> keywords -> RSA -> sitelinks -> `set_campaign_status ENABLED confirm=true`, and read it all back with `search_search`.
@@ -25,7 +25,7 @@ Code complete and unit-tested locally (100 tests pass). Server verified locally 
 
 ## Open questions for the owner
 - Budget cap: default is 500/day in account currency. Raise it in `/opt/ads-mcp/.env` when a campaign needs more.
-- Should other Google users (e.g. Sara) be able to connect? Any Google account that can see the Ads account can sign in; restrict at the Google Ads user level.
+- Should other Google users be able to connect? Any Google account that can see the Ads account can sign in; restrict at the Google Ads user level.
 
 ## Found undocumented
 None.
@@ -36,4 +36,4 @@ None.
 - Secrets: `/opt/ads-mcp/.env` on the droplet only. Names in `deploy/.env.example`.
 - Google Cloud project: `marvento-labs-ads` (planned id; confirm in console). OAuth client "Marvento Ads MCP".
 - DNS: Cloudflare zone mlabs.ae.
-- Repo: github.com/MarventoCapital/marvento-ads-mcp (fork of googleads/google-ads-mcp).
+- Repo: github.com/MarventoCapital/marvento-ads-mcp (derived from googleads/google-ads-mcp @ d7f5e8f; published without upstream git history).

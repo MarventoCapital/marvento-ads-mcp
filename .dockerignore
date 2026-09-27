@@ -5,7 +5,6 @@ __pycache__
 *.pyc
 tests
 docs
-deploy/.env
-deploy/*.env
+deploy
 *.md
 !README.md

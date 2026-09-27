@@ -17,5 +17,12 @@ Fork baseline: upstream googleads/google-ads-mcp commit d7f5e8f (2026-09-25, pac
 - `ads_mcp/config.py`: `ALL_CATEGORIES` extended with the four write namespaces; `ads_mcp/tools_config.yaml` enables them by default.
 - `pyproject.toml`: `fastmcp` pinned to `==4.0.3`. Why: the Dockerfile patches that exact version and would fail the build on a silent upgrade.
 - `.gitignore`: ignores `.env` and `deploy/.env`. `.dockerignore` added.
+- Removed upstream-only files: `.github/` CI and release workflows, CODEOWNERS, CONTRIBUTING.md, docs/releasing.md, tests/smoke/. Why: they target Google's repo and PyPI release process.
+
+### Fixed
+- `pyproject.toml`: setuptools package discovery restricted to `ads_mcp*`; `.dockerignore` now excludes all of `deploy/`. Why: with `deploy/create_droplet.py` present, setuptools auto-discovery found two top-level packages and refused to build, so the Docker image (and any `pip install .`) would have failed on the droplet. Caught by a clean install from the GitHub clone. Tested: fresh venv install, 100 tests pass, 23 tools mount from the installed package, simulated Docker build context installs and the Dockerfile's FastMCP patch assertion holds.
+
+### Repository
+- Published to github.com/MarventoCapital/marvento-ads-mcp (public) on 2026-09-27 through the GitHub connector. History there starts fresh (8 commits); upstream history stays in googleads/google-ads-mcp. Verified: clone is byte-identical to the working tree (60 files).
 
 Signed: Luis via Claude, 2026-09-27.

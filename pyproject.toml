@@ -26,6 +26,11 @@ classifiers = [
     "Programming Language :: Python"
 ]
 
+[tool.setuptools.packages.find]
+# Only ship the server package. Without this, setuptools auto-discovery also
+# picks up deploy/ (it contains a .py file) and refuses to build.
+include = ["ads_mcp*"]
+
 [project.optional-dependencies]
 dev = [
     "black",

@@ -83,7 +83,8 @@ Why: the OAuth redirect URI, authorized domain and brand verification all hang o
 - Explorer access blocks planning services, so a keyword-ideas tool would fail until Basic is granted.
 - Test accounts: writes can be exercised end to end under Test access using a test manager account; metrics there are always zero.
 - The Dockerfile asserts `fastmcp==4.0.3` (Codex RFC 9207 workaround); bumping FastMCP means revisiting that patch.
-- The upstream `.github/workflows` still target the upstream repo; they are harmless in the fork but not used.
+- `pyproject.toml` restricts package discovery to `ads_mcp*`. Any new top-level folder with `.py` files (like `deploy/`) would otherwise break `pip install .` and the Docker build with "Multiple top-level packages discovered".
+- The repo on GitHub was published through the connector, so it does not carry upstream git history. To merge upstream changes: `git remote add upstream https://github.com/googleads/google-ads-mcp.git`, fetch, and cherry-pick or diff by hand.
 
 ## Testing
 `python -m unittest discover -s tests -p "*_test.py"` (100 tests). Write tools are tested with a real `GoogleAdsClient` for types and a recorder in place of the service layer, so request protos and gates are checked without network. Live checks against a Google Ads test account are manual: see HANDOVER.md.

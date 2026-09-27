@@ -1,14 +1,14 @@
 # Handover: Marvento Ads MCP
 
 Rules: see AGENTS.md.
-Last updated: 2026-09-27 20:25 Asia/Dubai by Luis via Claude.
+Last updated: 2026-09-27 20:45 Asia/Dubai by Luis via Claude.
 Current version: unreleased; production droplet live with the real Google OAuth client. Baseline upstream d7f5e8f.
 
 ## Current state
-Code on GitHub (MarventoCapital/marvento-ads-mcp, public, main); 100 tests pass on a clean install. Server live at https://ads-mcp.mlabs.ae on droplet 604125096 since 2026-09-27 16:17 UTC, using the real Google OAuth client from Cloud project `marvento-labs-ads`. Verified up to Google's account chooser (Google accepts the client and redirect URI). Not yet done: a real sign-in through the claude.ai connector and the first tool calls.
+Code on GitHub (MarventoCapital/marvento-ads-mcp, public, main); 100 tests pass on a clean install. Server live at https://ads-mcp.mlabs.ae on droplet 604125096 since 2026-09-27 16:17 UTC, using the real Google OAuth client from Cloud project `marvento-labs-ads`. Connector added in claude.ai by Luis on 2026-09-27 (name "Google Ads"): Google sign-in completed, all 23 tools listed, `customers_list_accessible_customers` returned one account. Reading that account (`search_search` on `customer`) fails with "The customer account can't be accessed because it is not yet enabled or has been deactivated" (CUSTOMER_NOT_ENABLED), which usually means its Google Ads setup was never finished (billing) or it was cancelled. The Google Ads UI for Luis's personal Google account lists only cancelled accounts, not this one, so the connector sign-in may have used a different Google account. Account IDs are kept out of this public repo; they are in the private claude.ai project doc "google-ads-mcp-setup".
 
 ## Work in progress
-- Connector (Luis): add `https://ads-mcp.mlabs.ae/mcp` as a custom connector in claude.ai and sign in with Google. Expect a one-time "Google hasn't verified this app" warning (Advanced -> continue), because the app requests the sensitive `adwords` scope and is not verified yet.
+- Account question (Luis): which Google account and customer ID is the live Marvento Labs Ads account, and is the one the connector sees it? Either finish that account's setup (billing, done by Luis in the Google Ads UI) or reconnect the connector with the Google account that owns the real one.
 - Google side (Luis): checklist steps 7-10 remain: brand verification (needs Search Console ownership of mlabs.ae), Explorer/Basic access application on the Google Ads API "Access levels" page, note the Marvento Labs customer ID, test manager account.
 
 ## Blockers
@@ -17,7 +17,7 @@ Code on GitHub (MarventoCapital/marvento-ads-mcp, public, main); 100 tests pass 
 - Resolved 2026-09-27: real Google OAuth client created and deployed (was placeholder).
 
 ## Next steps (priority order)
-1. Luis adds the connector in claude.ai and signs in with Google; confirm 23 tools are listed.
+1. Done 2026-09-27: connector added, sign-in works, 23 tools listed. Open: identify/enable the live Ads account (see Work in progress).
 2. Smoke test on a Google Ads **test** account: `customers_list_accessible_customers`, then budget -> campaign -> targeting -> ad group -> keywords -> RSA -> sitelinks -> `set_campaign_status ENABLED confirm=true`, and read it all back with `search_search`.
 3. Apply for Explorer/Basic access (Cloud console -> APIs & Services -> Google Ads API -> Access levels -> Manage). Basic needs brand verification first (Google Auth Platform -> Verification Center).
 4. When granted: list accessible customers on the live account and run a read-only performance report. Then cut release 0.1.0 in CHANGELOG.md with the deployment reference.

@@ -12,7 +12,7 @@ Auth: FastMCP `GoogleProvider` (OAuth proxy). The server is itself an OAuth auth
 
 Tools are auto-discovered: every module in `ads_mcp/tools/` that defines a `FastMCP(...)` sub-server is mounted with its name as prefix (e.g. `campaigns_create_campaign`). `ads_mcp/tools_config.yaml` turns namespaces on and off.
 
-Stack and platforms: DigitalOcean droplet `ads-mcp` (fra1, s-1vcpu-1gb, Ubuntu 24.04) provisioned by cloud-init; Docker Compose; Caddy 2 for HTTPS (Let's Encrypt); Cloudflare DNS for `mlabs.ae` (record must be DNS-only, not proxied, so SSE streams are not buffered and certificates issue directly); Google Cloud project `marvento-labs-ads` (OAuth client + Ads API access level).
+Stack and platforms: DigitalOcean droplet `ads-mcp` (fra1, s-1vcpu-1gb, Ubuntu 24.04) provisioned by cloud-init; Docker Compose; Caddy 2 for HTTPS (Let's Encrypt); Cloudflare DNS for `mlabs.ae` (record must be DNS-only, not proxied, so SSE streams are not buffered and certificates issue directly); Google Cloud project `marvento-labs-ads` (created 2026-09-27; Google Ads API enabled; OAuth web client "Marvento Ads MCP"; Ads API access level, Test until approved).
 
 Environments: local dev runs the server with `google-ads-mcp` (stdio) or, with the OAuth env vars set, on `http://localhost:8080/mcp`. Production is the droplet. Env vars live in `/opt/ads-mcp/.env` on the droplet (names in `deploy/.env.example`); nothing secret is in the repo.
 
@@ -77,7 +77,9 @@ Why: the OAuth redirect URI, authorized domain and brand verification all hang o
 - 2026-09-27 (unreleased): write tools, safety rails, deployment kit, docs. See CHANGELOG.md.
 
 ## Known issues and gotchas
-- Google OAuth app in "Testing" publishing status expires refresh tokens after 7 days. The app must be published to production (unverified is fine for one user) or logins break weekly.
+- Google OAuth app in "Testing" publishing status expires refresh tokens after 7 days. The app must be published to production (unverified is fine for one user) or logins break weekly. Done 2026-09-27: the app is In production, unverified.
+- Unverified production app: sign-in shows a one-time "Google hasn't verified this app" warning because `adwords` is a sensitive scope, and at most 100 users can ever grant it. Brand verification (Verification Center) removes both.
+- New Google OAuth client secrets are shown only once, in the "OAuth client created" dialog. The browser automation in Cowork cannot read them (the Chrome extension blocks secret-looking values), so the owner copies it by hand. If lost, add a new secret to the same client and `--recreate`.
 - Campaign dates use `start_date_time` / `end_date_time` in API v25 (`YYYY-MM-DD HH:MM:SS`); the tools accept `YYYY-MM-DD` and expand.
 - `contains_eu_political_advertising` is a required declaration on campaign creation; the tools default it to "does not contain".
 - Explorer access blocks planning services, so a keyword-ideas tool would fail until Basic is granted.

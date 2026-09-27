@@ -1,7 +1,7 @@
 # Handover: Marvento Ads MCP
 
 Rules: see AGENTS.md.
-Last updated: 2026-09-27 04:10 Asia/Dubai by Luis via Claude.
+Last updated: 2026-09-27 04:35 Asia/Dubai by Luis via Claude.
 Current version: unreleased (no deployment yet). Baseline upstream d7f5e8f.
 
 ## Current state
@@ -13,7 +13,7 @@ Code complete, on GitHub (MarventoCapital/marvento-ads-mcp, public, main). Clean
 
 ## Blockers
 - Google API access level: production account calls fail until the Cloud project holds Explorer or Basic. Timing is Google's (brand verification, then automated review).
-- Droplet creation: needs the DO token.
+- Droplet creation: DO token received 2026-09-27, but Cowork cloud sessions cannot reach `api.digitalocean.com` (org egress policy, proxy answers 403 to CONNECT). Fix: add `api.digitalocean.com` (plus `api.cloudflare.com` if a Cloudflare token is used, and `ads-mcp.mlabs.ae` for health checks) to the org network allowlist in claude.ai Admin settings -> Capabilities, then run from a new session; or run `deploy/create_droplet.py` from a machine with open egress.
 
 ## Next steps (priority order)
 1. Done 2026-09-27: repo published at `MarventoCapital/marvento-ads-mcp` (public). `create_droplet.py` defaults to it; set `GIT_REPO` if it moves.

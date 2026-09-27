@@ -83,6 +83,7 @@ Why: the OAuth redirect URI, authorized domain and brand verification all hang o
 - Explorer access blocks planning services, so a keyword-ideas tool would fail until Basic is granted.
 - Test accounts: writes can be exercised end to end under Test access using a test manager account; metrics there are always zero.
 - The Dockerfile asserts `fastmcp==4.0.3` (Codex RFC 9207 workaround); bumping FastMCP means revisiting that patch.
+- Order matters on first deploy: the DNS A record must resolve before the droplet boots. Otherwise Caddy's first ACME attempts fail on a cached NXDOMAIN, Let's Encrypt's failed-validation limit (5 per hour per account and hostname) kicks in, and HTTPS stays down until Caddy's backoff retries after the limit clears. Symptom from outside: TLS handshake fails with "tlsv1 alert internal error". Fastest fix: `create_droplet.py --recreate` (new ACME account) once DNS resolves.
 - `pyproject.toml` restricts package discovery to `ads_mcp*`. Any new top-level folder with `.py` files (like `deploy/`) would otherwise break `pip install .` and the Docker build with "Multiple top-level packages discovered".
 - The repo on GitHub was published through the connector, so it does not carry upstream git history. To merge upstream changes: `git remote add upstream https://github.com/googleads/google-ads-mcp.git`, fetch, and cherry-pick or diff by hand.
 

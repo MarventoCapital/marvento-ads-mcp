@@ -3,10 +3,9 @@
 }
 
 {$ADS_MCP_HOSTNAME} {
-	encode zstd gzip
-
-	# Streamable HTTP MCP uses long-lived SSE responses; Caddy flushes
-	# text/event-stream automatically, so no flush_interval is needed.
+	# No `encode` here: compression can buffer the streamed (SSE) responses
+	# MCP uses, and the JSON payloads are small. Caddy's reverse_proxy flushes
+	# text/event-stream immediately, so no flush_interval is needed.
 	reverse_proxy mcp:8080 {
 		header_up X-Forwarded-Proto https
 		header_up X-Forwarded-Host {host}

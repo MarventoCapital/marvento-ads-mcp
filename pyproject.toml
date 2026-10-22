@@ -10,7 +10,9 @@ license = "Apache-2.0"
 dependencies = [
     "google-ads>=32.0.0",
     "mcp[cli]==2.0.0",
-    "fastmcp==4.0.3"
+    "fastmcp==4.0.3",
+    # Keep the certificate bundle safe outside Docker as well.
+    "certifi>=2026.10.19"
 ]
 
 description = "MCP Server for Google Ads, depends on Google Ads API."

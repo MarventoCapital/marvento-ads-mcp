@@ -91,3 +91,10 @@ Why: the OAuth redirect URI, authorized domain and brand verification all hang o
 
 ## Testing
 `python -m unittest discover -s tests -p "*_test.py"` (100 tests). Write tools are tested with a real `GoogleAdsClient` for types and a recorder in place of the service layer, so request protos and gates are checked without network. Live checks against a Google Ads test account are manual: see HANDOVER.md.
+
+## Certificate authority incident response (2026-10-22)
+Python's 2026 eMudhra/emSign advisory concerns compromised intermediate CA keys trusted by older bundled certificate stores. Image builds must pin uv >=0.13.4, install pip >=26.2.2 and certifi >=2026.10.19, refresh system CA certificates, and rebuild without Docker cache. The patched Dockerfile implements these checks; the GitHub workflow validates the clean image. A successful repository change or CI run is not evidence that the DigitalOcean production container was updated.
+
+After merging the fix, use the droplet console and execute `sudo /opt/ads-mcp/src/deploy/update.sh`. It now pulls current OS and Caddy layers, builds without cache, checks patched pip/certifi, restarts the stack, and waits for its health check. Verify `https://ads-mcp.mlabs.ae/.well-known/oauth-authorization-server` and an authenticated Google Ads MCP read. Preserve the existing `oauth_store` volume, `/opt/ads-mcp/.env`, and the signing key. No droplet recreation is needed.
+
+Reference: https://discuss.python.org/t/information-for-python-users-regarding-emudhra-emsign-ca-certificate-security-incident/109576

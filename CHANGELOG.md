@@ -7,6 +7,11 @@ Fork baseline: upstream googleads/google-ads-mcp commit d7f5e8f (2026-09-25, pac
 
 ## [Unreleased]
 
+### Security
+- 2026-10-22: Mitigation for the eMudhra/emSign compromised CA incident (GHSA-6q48-6c7w-9gw2, GHSA-hq85-5cpj-mr62): pin uv 0.13.4, require certifi >=2026.10.19 and pip >=26.2.2 in freshly rebuilt images, update OS certificate package, verify installed versions and fail builds on affected certificate bundles. Add a pull request container regression check and force fresh base and Caddy pulls during VPS update. Why: old pip and uv bundle vulnerable trust stores despite operating system updates. Source code update alone does not fix a running container.
+
+## [Unreleased]
+
 ### Added
 - Write tools in four new namespaces: `campaigns`, `ad_groups`, `ads`, `assets` (20 tools). Why: upstream is read-only; running campaigns from an MCP client needs create/update. Files: `ads_mcp/tools/campaigns.py`, `ad_groups.py`, `ads.py`, `assets.py`, shared helpers in `ads_mcp/mutate.py`. Tested: 33 unit tests in `tests/tools/write_tools_test.py` covering request shape and safety gates; full suite 100 tests pass.
 - Safety rails: campaigns created PAUSED; `confirm=true` required for ENABLED/REMOVED, budget and bid changes, criterion removal; `ADS_MCP_MAX_DAILY_BUDGET` cap (default 500); `validate_only` on every tool; local validation of RSA copy, sitelinks and callouts. Why: an agent mistake must not be able to start or scale spend on its own.

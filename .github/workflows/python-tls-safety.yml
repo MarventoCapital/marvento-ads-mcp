@@ -1,0 +1,26 @@
+name: Python TLS certificate safety
+on:
+  pull_request:
+    paths:
+      - 'Dockerfile'
+      - 'pyproject.toml'
+      - 'deploy/**'
+      - '.github/workflows/python-tls-safety.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+      - name: Build clean Python image with updated trust stores
+        run: docker build --pull --no-cache -t marvento-ads-mcp:tls-check .
+      - name: Verify TLS dependencies
+        run: |
+          docker run --rm --entrypoint python marvento-ads-mcp:tls-check -c "from importlib.metadata import version; import certifi; from pathlib import Path; v=lambda x:tuple(map(int,version(x).split('.'))); assert v('pip') >= (26,2,2); assert v('certifi') >= (2026,10,19); assert 'emSign ECC Root CA - G3' not in Path(certifi.where()).read_text()"
+          docker run --rm --entrypoint uv marvento-ads-mcp:tls-check --version | grep -E '^uv (0\.13\.[4-9]|0\.(1[4-9]|[2-9][0-9])\.|[1-9][0-9]*\.)'
+          docker run --rm --entrypoint python marvento-ads-mcp:tls-check -m pip check

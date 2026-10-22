@@ -41,3 +41,10 @@ None.
 - JWT signing key: generated in the creating session and passed to every (re)create so connector logins survive rebuilds. It is not stored anywhere else except `/opt/ads-mcp/.env`; recreating without it just means signing in to the connector again once.
 - Secrets: `/opt/ads-mcp/.env` on the droplet only. Names in `deploy/.env.example`.
 - Repo: github.com/MarventoCapital/marvento-ads-mcp (derived from googleads/google-ads-mcp @ d7f5e8f; published without upstream git history).
+
+## Security follow up, 2026-10-22, ChatGPT
+- Prepared GitHub branch `security/emudhra-ca-20261022` for the eMudhra/emSign compromised certificate authority advisory. Container uses uv 0.13.4, patched certifi and pip, OS CA refresh, and clean build checks. CI workflow validates the built image.
+- Status: GitHub changes require review and merge, and must be deployed separately to DigitalOcean. Production is NOT confirmed patched. Run `sudo /opt/ads-mcp/src/deploy/update.sh` on the droplet only after merging and confirm the MCP health endpoint and Google OAuth connectivity. Do not recreate/destroy the droplet: preserve the OAuth token volume and signing key.
+- Also update any local Python virtual environments running this service. Verify `pip>=26.2.2`, `certifi>=2026.10.19`, `uv>=0.13.4`, and `sigstore>=4.5.1` if installed.
+- Rollback: use the previous known good Git commit and rebuild the image, but never roll back to an unpatched CA bundle; address failing tests instead.
+- Signed: ChatGPT, 2026-10-22.

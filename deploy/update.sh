@@ -14,7 +14,14 @@ echo "source: $BEFORE -> $AFTER"
 
 cd "$SRC_DIR/deploy"
 [ -e .env ] || ln -sf /opt/ads-mcp/.env .env
-docker compose build --pull mcp
+# Security rebuild: do not reuse an older layer with a vulnerable CA store.
+docker compose build --pull --no-cache mcp
+docker compose pull caddy
+
+# Validate the candidate image before touching the running service.
+docker compose run --rm --no-deps --entrypoint python mcp -c "from importlib.metadata import version; assert tuple(map(int,version('pip').split('.'))) >= (26,2,2); assert tuple(map(int,version('certifi').split('.'))) >= (2026,10,19)"
+docker compose run --rm --no-deps --entrypoint uv mcp --version
+
 docker compose up -d --remove-orphans
 docker image prune -f >/dev/null
 
